@@ -34,12 +34,17 @@ namespace csharpi.Services
             replies.Add("no");
             replies.Add("maybe");
             replies.Add("hazzzzy....");
+            replies.Add("Try again later");
+            replies.Add("Of course the answer is yes!");
+            replies.Add("Why would it be? No!");
+            replies.Add("Are you trying to trick me?");
+            replies.Add("It is forseen as such");
 
             // get the answer
             var answer = replies[new Random().Next(replies.Count - 1)];
 
             // reply with the answer
-            await RespondAsync($"You asked: [**{question}**], and your answer is: [**{answer}**]");
+            await RespondAsync($"You asked: [**{question}**]\nEight ball answer: [**{answer}**]");
         }
     }
 }
