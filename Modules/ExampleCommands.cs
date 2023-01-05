@@ -15,6 +15,7 @@ namespace csharpi.Services
         // dependencies can be accessed through Property injection, public properties with public setters will be set by the service provider
         public InteractionService Commands { get; set; }
         private CommandHandler _handler;
+        private static Random rng = new Random();  
 
         // constructor injection is also a valid way to access the dependecies
         public ExampleCommands (CommandHandler handler)
@@ -45,6 +46,35 @@ namespace csharpi.Services
 
             // reply with the answer
             await RespondAsync($"You asked: [**{question}**]\nEight ball answer: [**{answer}**]");
+        }
+
+        // our second /command!
+        [SlashCommand("chooseteam", "let Apple-bot choose your team!")]
+        public async Task ChooseTeam(string members, int numberOfTeams = 2)
+        {
+            // create a list of possible replies
+            var teamMembers = new List<string>(members.Split(','));
+            var shuffled = teamMembers.OrderBy(_ => rng.Next()).ToList();
+
+            var teamA = new List<string>();
+            var teamB = new List<string>();
+
+            var participants = shuffled.Count;
+            for (int i = 0; i < participants; i++) 
+            {
+                if (i%2 == participants%2)
+                {
+                    teamA.Add(shuffled[i]);
+                }
+                else {
+                    teamB.Add(shuffled[i]);
+                }
+            }
+            string joinedA = String.Join(", ", teamA.ToArray());
+            string joinedB = String.Join(", ", teamB.ToArray());
+
+            // reply with the answer
+            await RespondAsync($"You entered: [**{members}**]\nThere are [**{participants}**] participants\nYour teams are...\nTeam A: [**{joinedA}**]\nTeam B: [**{joinedB}**]");
         }
     }
 }
