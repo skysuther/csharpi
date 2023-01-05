@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Discord;
 using Discord.Net;
 using Discord.Commands;
@@ -10,8 +10,6 @@ using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
 using csharpi.Services;
 using System.Threading;
-using Serilog;
-using Microsoft.Extensions.Logging;
 
 namespace csharpi
 {
@@ -22,27 +20,13 @@ namespace csharpi
         private DiscordSocketClient _client;
         private InteractionService _commands;
         private ulong _testGuildId;
-        private static string _logLevel;
 
-        static void Main(string[] args = null)
-        {
-            if (args.Count() != 0)
-            {
-                _logLevel = args[0];
-            } 
-            Log.Logger = new LoggerConfiguration()
-                .WriteTo.File("logs/csharpi.log", rollingInterval: RollingInterval.Day)
-                .WriteTo.Console()
-                .CreateLogger();
+        public static Task Main(string[] args) => new Program().MainAsync();
 
-            new Program().MainAsync().GetAwaiter().GetResult();
-        }
         public async Task MainAsync(string[] args)
         {
             
         }
-
-
 
         public Program()
         {
@@ -64,10 +48,14 @@ namespace csharpi
                 // get the client and assign to client 
                 // you get the services via GetRequiredService<T>
                 var client = services.GetRequiredService<DiscordSocketClient>();
+                var commands = services.GetRequiredService<InteractionService>();
                 _client = client;
+                _commands = commands;
 
                 // setup logging and the ready event
-                services.GetRequiredService<LoggingService>();
+                client.Log += LogAsync;
+                commands.Log += LogAsync;
+                client.Ready += ReadyAsync;
 
                 // this is where we get the Token value from the configuration file, and start the bot
                 await client.LoginAsync(TokenType.Bot, _config["Token"]);
@@ -76,8 +64,30 @@ namespace csharpi
                 // we get the CommandHandler class here and call the InitializeAsync method to start things up for the CommandHandler service
                 await services.GetRequiredService<CommandHandler>().InitializeAsync();
 
-                await Task.Delay(-1);
+                await Task.Delay(Timeout.Infinite);
             }
+        }
+
+        private Task LogAsync(LogMessage log)
+        {
+            Console.WriteLine(log.ToString());
+            return Task.CompletedTask;
+        }
+
+        private async Task ReadyAsync()
+        {
+            if (IsDebug())
+            {
+                // this is where you put the id of the test discord guild
+                System.Console.WriteLine($"In debug mode, adding commands to {_testGuildId}...");
+                await _commands.RegisterCommandsToGuildAsync(_testGuildId);
+            }
+            else
+            {
+                // this method will add commands globally, but can take around an hour
+                await _commands.RegisterCommandsGloballyAsync(true);
+            }
+            Console.WriteLine($"Connected as -> [{_client.CurrentUser}] :)");
         }
 
         // this method handles the ServiceCollection creation/configuration, and builds out the service provider we can call on later
@@ -86,48 +96,12 @@ namespace csharpi
             // this returns a ServiceProvider that is used later to call for those services
             // we can add types we have access to here, hence adding the new using statement:
             // using csharpi.Services;
-            // the config we build is also added, which comes in handy for setting the command prefix!
-            var services = new ServiceCollection()
+            return new ServiceCollection()
                 .AddSingleton(_config)
                 .AddSingleton<DiscordSocketClient>()
-                .AddSingleton<CommandService>()
+                .AddSingleton(x => new InteractionService(x.GetRequiredService<DiscordSocketClient>()))
                 .AddSingleton<CommandHandler>()
-                .AddSingleton<LoggingService>()
-                .AddLogging(configure => configure.AddSerilog());
-
-            if (!string.IsNullOrEmpty(_logLevel)) 
-            {
-                switch (_logLevel.ToLower())
-                {
-                    case "info":
-                    {
-                        services.Configure<LoggerFilterOptions>(options => options.MinLevel = LogLevel.Information);
-                        break;
-                    }
-                    case "error":
-                    {
-                        services.Configure<LoggerFilterOptions>(options => options.MinLevel = LogLevel.Error);
-                        break;
-                    } 
-                    case "debug":
-                    {
-                        services.Configure<LoggerFilterOptions>(options => options.MinLevel = LogLevel.Debug);
-                        break;
-                    } 
-                    default: 
-                    {
-                        services.Configure<LoggerFilterOptions>(options => options.MinLevel = LogLevel.Error);
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                services.Configure<LoggerFilterOptions>(options => options.MinLevel = LogLevel.Information);
-            }
-
-            var serviceProvider = services.BuildServiceProvider();
-            return serviceProvider;
+                .BuildServiceProvider();
         }
 
         static bool IsDebug ( )
