@@ -20,6 +20,9 @@ namespace csharpi.Services
         private static Random rng = new Random();  
         DBConnection connection = new DBConnection();
 
+        //Slash Command Builder
+        
+
         // constructor injection is also a valid way to access the dependecies
         public ExampleCommands (CommandHandler handler)
         {
@@ -31,13 +34,14 @@ namespace csharpi.Services
         public async Task OnlinePlayers(string status = "online")
         {
             // create a list of possible replies
-            var User = new List<string>();
+            //var User = new List<string>();
             // Using await here will mean this returns as a IReadOnlyCollection<IGuildUser> so we don't have to manually deal with asynchronous code.
-            var guildUsers = await Context.Guild.GetUsersAsync(RequestOptions.Default).FlattenAsync();
+            var guildUsers = await Context.Guild.GetUsersAsync().FlattenAsync();
+            var getChannel = Context.Guild.GetChannel;
+            
             // Using LINQ .Select() to enumerate through each entry and collect the Username property.
             // I'm assuming .Username is a property that you can use. Update this to an appropriate property if not the case.
             var guildUserNames = guildUsers.Select(User => User.Username);
-
             // Now let's convert the array of strings into a single, comma delimited string
             var commaSeperatedGuildUserNames = string.Join(',', guildUserNames);
 
