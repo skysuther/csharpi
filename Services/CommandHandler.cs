@@ -185,55 +185,6 @@ namespace csharpi.Services
             var globalCommand = new SlashCommandBuilder();
             globalCommand.WithName("first-global-command");
             globalCommand.WithDescription("This is my first global slash command");
-            
-
-            // Our settings command
-            var settingsCommand = new SlashCommandBuilder()
-                .WithName("settings")
-                .WithDescription("Changes some settings within the bot.")
-                .AddOption(new SlashCommandOptionBuilder()
-                    .WithName("field-a")
-                    .WithDescription("Gets or sets the field A")
-                    .WithType(ApplicationCommandOptionType.SubCommandGroup)
-                    .AddOption(new SlashCommandOptionBuilder()
-                        .WithName("set")
-                        .WithDescription("Sets the field A")
-                        .WithType(ApplicationCommandOptionType.SubCommand)
-                        .AddOption("value", ApplicationCommandOptionType.String, "the value to set the field", isRequired: true)
-                    ).AddOption(new SlashCommandOptionBuilder()
-                        .WithName("get")
-                        .WithDescription("Gets the value of field A.")
-                        .WithType(ApplicationCommandOptionType.SubCommand)
-                    )
-                ).AddOption(new SlashCommandOptionBuilder()
-                    .WithName("field-b")
-                    .WithDescription("Gets or sets the field B")
-                    .WithType(ApplicationCommandOptionType.SubCommandGroup)
-                    .AddOption(new SlashCommandOptionBuilder()
-                        .WithName("set")
-                        .WithDescription("Sets the field B")
-                        .WithType(ApplicationCommandOptionType.SubCommand)
-                        .AddOption("value", ApplicationCommandOptionType.Integer, "the value to set the fie to.", isRequired: true)
-                    ).AddOption(new SlashCommandOptionBuilder()
-                        .WithName("get")
-                        .WithDescription("Gets the value of field B.")
-                        .WithType(ApplicationCommandOptionType.SubCommand)
-                    )
-                ).AddOption(new SlashCommandOptionBuilder()
-                    .WithName("field-c")
-                    .WithDescription("Gets or sets the field C")
-                    .WithType(ApplicationCommandOptionType.SubCommandGroup)
-                    .AddOption(new SlashCommandOptionBuilder()
-                        .WithName("set")
-                        .WithDescription("Sets the field C")
-                        .WithType(ApplicationCommandOptionType.SubCommand)
-                        .AddOption("value", ApplicationCommandOptionType.Boolean, "the value to set the fie to.", isRequired: true)
-                    ).AddOption(new SlashCommandOptionBuilder()
-                        .WithName("get")
-                        .WithDescription("Gets the value of field C.")
-                        .WithType(ApplicationCommandOptionType.SubCommand)
-                    )
-                );
 
 
             try
@@ -241,12 +192,11 @@ namespace csharpi.Services
                 // Now that we have our builder, we can call the CreateApplicationCommandAsync method to make our slash command.
                 //await guild.CreateApplicationCommandAsync(guildCommand.Build());
                 await _client.Rest.CreateGuildCommand(guildCommand.Build(), guildId);
-                await _client.Rest.CreateGuildCommand(play_rockpaperscissors.Build(), guildId);
-                await _client.Rest.CreateGuildCommand(settingsCommand.Build(), guildId);
                 await _client.Rest.CreateGuildCommand(appleFacts.Build(), guildId);
 
                 // With global commands we don't need the guild.
                 await _client.CreateGlobalApplicationCommandAsync(globalCommand.Build());
+                await _client.CreateGlobalApplicationCommandAsync(play_rockpaperscissors.Build());
                 // Using the ready event is a simple implementation for the sake of the example. Suitable for testing and development.
                 // For a production bot, it is recommended to only run the CreateGlobalApplicationCommandAsync() once for each command.
             }
@@ -267,9 +217,6 @@ namespace csharpi.Services
             {
                 case "list-roles":
                     await HandleListRoleCommand(command);
-                    break;
-                case "settings":
-                    await HandleSettingsCommand(command);
                     break;
                 case "facts":
                     await HandleAppleFactCommand(command);
@@ -298,55 +245,7 @@ namespace csharpi.Services
             // Now, Let's respond with the embed.
             await command.RespondAsync(embed: embedBuiler.Build(), ephemeral: true);
         }
-        private async Task HandleSettingsCommand(SocketSlashCommand command)
-        {
-            // First lets extract our variables
-            var fieldName = command.Data.Options.First().Name;
-            var getOrSet = command.Data.Options.First().Options.First().Name;
-            // Since there is no value on a get command, we use the ? operator because "Options" can be null.
-            object value = "";
-            
-
-            switch (getOrSet)
-            {
-                case "get":
-                    {
-                        if(fieldName == "field-a")
-                        {
-                            await command.RespondAsync($"The value of `field-a` is `{bset.FieldA}`");
-                        }
-                        else if (fieldName == "field-b")
-                        {
-                            await command.RespondAsync($"The value of `field-b` is `{bset.FieldB}`");
-                        }
-                        else if (fieldName == "field-c")
-                        {
-                            await command.RespondAsync($"The value of `field-c` is `{bset.FieldC}`");
-                        }
-                    }
-                    break;
-                case "set":
-                    {
-                        value = command.Data.Options.First().Options.First().Options?.FirstOrDefault().Value;
-                         if(fieldName == "field-a")
-                        {
-                            bset.FieldA = (string)value;
-                            await command.RespondAsync($"`field-a` has been set to `{bset.FieldA}`");
-                        }
-                        else if (fieldName == "field-b")
-                        {
-                            bset.FieldB = (int)value;
-                            await command.RespondAsync($"`field-b` has been set to `{bset.FieldB}`");
-                        }
-                        else if (fieldName == "field-c")
-                        {
-                            bset.FieldC = (bool)value;
-                            await command.RespondAsync($"`field-c` has been set to `{bset.FieldC}`");
-                        }
-                    }
-                    break;
-            }
-        }
+        
         private async Task HandleAppleFactCommand(SocketSlashCommand command)
         {
             // We need to extract the user parameter from the command. since we only have one option and it's required, we can just use the first option.
@@ -411,22 +310,30 @@ namespace csharpi.Services
                 {
                     case "rock":
                     if (UserAnswers[1].Item2 == "paper") {WinStatus = "lost";}
+                    if (UserAnswers[1].Item2 == "rock") {WinStatus = "tie";}
                     break;
                     case "paper":
                     if (UserAnswers[1].Item2 == "scissors") {WinStatus = "lost";}
+                    if (UserAnswers[1].Item2 == "paper") {WinStatus = "tie";}
                     break;
                     case "scissors":
                     if (UserAnswers[1].Item2 == "rock") {WinStatus = "lost";}
+                    if (UserAnswers[1].Item2 == "scissors") {WinStatus = "tie";}
                     break;
                 }
                 if (WinStatus == "win")
                 {
                     message = $"[**{UserAnswers[0].Item1.Username}**] has won >> [**{UserAnswers[0].Item2}**]\n";
-                    message += $"[**{UserAnswers[1].Item1.Username}**] has lost >> [**{UserAnswers[1].Item2}**]";
+                    message += $"[**{UserAnswers[1].Item1.Username}**] has lost >> [**{UserAnswers[1].Item2}**]\n";
+                } else if (WinStatus == "tie")
+                {
+                    message = $"[**{UserAnswers[0].Item1.Username}**] >> [**{UserAnswers[0].Item2}**]\n";
+                    message += $"[**{UserAnswers[1].Item1.Username}**] >> [**{UserAnswers[1].Item2}**]\n";
+                    message += $"Its a tie!";
                 } else
                 {
                     message = $"[**{UserAnswers[1].Item1.Username}**] has won >> [**{UserAnswers[1].Item2}**]\n";
-                    message += $"[**{UserAnswers[0].Item1.Username}**] has lost >> [**{UserAnswers[0].Item2}**]";
+                    message += $"[**{UserAnswers[0].Item1.Username}**] has lost >> [**{UserAnswers[0].Item2}**]\n";
                 }
                 await component.UpdateAsync(x =>
                 { 

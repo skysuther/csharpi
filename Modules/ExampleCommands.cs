@@ -30,28 +30,28 @@ namespace csharpi.Services
         }
 
         // Command to return active players!
-        [SlashCommand("online-players", "Return a list of active Players!")]
-        public async Task OnlinePlayers(string status = "online")
-        {
-            // create a list of possible replies
-            //var User = new List<string>();
-            // Using await here will mean this returns as a IReadOnlyCollection<IGuildUser> so we don't have to manually deal with asynchronous code.
-            var guildUsers = await Context.Guild.GetUsersAsync().FlattenAsync();
-            var getChannel = Context.Guild.GetChannel;
+        // [SlashCommand("online-players", "Return a list of active Players!")]
+        // public async Task OnlinePlayers(string status = "online")
+        // {
+        //     // create a list of possible replies
+        //     //var User = new List<string>();
+        //     // Using await here will mean this returns as a IReadOnlyCollection<IGuildUser> so we don't have to manually deal with asynchronous code.
+        //     var guildUsers = await Context.Guild.GetUsersAsync().FlattenAsync();
+        //     var getChannel = Context.Guild.GetChannel;
             
-            // Using LINQ .Select() to enumerate through each entry and collect the Username property.
-            // I'm assuming .Username is a property that you can use. Update this to an appropriate property if not the case.
-            var guildUserNames = guildUsers.Select(User => User.Username);
-            // Now let's convert the array of strings into a single, comma delimited string
-            var commaSeperatedGuildUserNames = string.Join(',', guildUserNames);
+        //     // Using LINQ .Select() to enumerate through each entry and collect the Username property.
+        //     // I'm assuming .Username is a property that you can use. Update this to an appropriate property if not the case.
+        //     var guildUserNames = guildUsers.Select(User => User.Username);
+        //     // Now let's convert the array of strings into a single, comma delimited string
+        //     var commaSeperatedGuildUserNames = string.Join(',', guildUserNames);
 
-            await RespondAsync(commaSeperatedGuildUserNames);
+        //     await RespondAsync(commaSeperatedGuildUserNames);
 
-            // get the answer
+        //     // get the answer
 
-            // reply with the answer
-            //await RespondAsync($"You asked: [**{question}**]\nEight ball answer: [**{answer}**]");
-        }
+        //     // reply with the answer
+        //     //await RespondAsync($"You asked: [**{question}**]\nEight ball answer: [**{answer}**]");
+        // }
 
         // our first /command!
         [SlashCommand("8ball", "find your answer!")]
