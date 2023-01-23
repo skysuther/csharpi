@@ -19,7 +19,9 @@ namespace csharpi.Services
         private readonly InteractionService _commands;
         private readonly IServiceProvider _services;
         private BotSettings bset = new BotSettings();
+        private RockPaperScissorsObject rps = new RockPaperScissorsObject();
         DBConnection connection = new DBConnection();
+        List<Tuple<SocketUser, string>> UserAnswers = new List<Tuple<SocketUser, string>>();
 
         public CommandHandler(DiscordSocketClient client, InteractionService commands, IServiceProvider services)
         {
@@ -368,36 +370,80 @@ namespace csharpi.Services
                 .WithButton("Paper", "paper-id")
                 .WithButton("Scissors", "scissors-id");
 
-            await command.RespondAsync("Here is a button!", components: rockbuilder.Build());
+            await command.RespondAsync("Click to play!\n", components: rockbuilder.Build());
         }
         public async Task MyButtonHandler(SocketMessageComponent component)
         {
             // We can now check for our custom id
+            var answer = "";
             switch(component.Data.CustomId)
             {
                 // Since we set our buttons custom id as 'custom-id', we can check for it like this:
                 case "rock-id":
-                    // Lets respond by sending a message saying they clicked the button
-                    await component.UpdateAsync(x =>
-                    { 
-                        x.Content = $"{component.User.Mention} has chosen!"; 
-                    });
+                    answer = "rock";
                     break;
                 case "paper-id":
-                    // Lets respond by sending a message saying they clicked the button
-                    await component.UpdateAsync(x =>
-                    { 
-                        x.Content = $"{component.User.Mention} has chosen!"; 
-                    });
+                    answer = "paper";
                     break;
                 case "scissors-id":
-                    // Lets respond by sending a message saying they clicked the button
-                    await component.UpdateAsync(x =>
-                    { 
-                        x.Content = $"{component.User.Mention} has chosen!"; 
-                    });
+                    answer = "scissors";
                     break;
             }
+            Tuple<SocketUser, string> useranswer = Tuple.Create(component.User,answer);
+            if(UserAnswers.Count() == 0)
+            {
+                UserAnswers.Add(useranswer);
+            } else
+            {
+                if(UserAnswers[0].Item1.Username.Equals(component.User.Username))
+                {
+                } else
+                {
+                    UserAnswers.Add(useranswer);
+                }
+            }
+            var message = "";
+            var WinStatus = "win";
+
+            if (UserAnswers.Count() >= 2)
+            {
+                switch(UserAnswers[0].Item2)
+                {
+                    case "rock":
+                    if (UserAnswers[1].Item2 == "paper") {WinStatus = "lost";}
+                    break;
+                    case "paper":
+                    if (UserAnswers[1].Item2 == "scissors") {WinStatus = "lost";}
+                    break;
+                    case "scissors":
+                    if (UserAnswers[1].Item2 == "rock") {WinStatus = "lost";}
+                    break;
+                }
+                if (WinStatus == "win")
+                {
+                    message = $"[**{UserAnswers[0].Item1.Username}**] has won >> [**{UserAnswers[0].Item2}**]\n";
+                    message += $"[**{UserAnswers[1].Item1.Username}**] has lost >> [**{UserAnswers[1].Item2}**]";
+                } else
+                {
+                    message = $"[**{UserAnswers[1].Item1.Username}**] has won >> [**{UserAnswers[1].Item2}**]\n";
+                    message += $"[**{UserAnswers[0].Item1.Username}**] has lost >> [**{UserAnswers[0].Item2}**]";
+                }
+                await component.UpdateAsync(x =>
+                { 
+                    x.Content = $"{message}";
+                    x.Components = null;
+                });
+
+                UserAnswers.Clear();
+            } else 
+            {
+                await component.UpdateAsync(x =>
+                { 
+                    x.Content = $"{component.User.Username} has chosen!\n";
+                });
+            }
+
+            
         }
     }
 }

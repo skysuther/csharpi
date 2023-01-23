@@ -1,4 +1,9 @@
 using System;
+using System.Collections.Generic;
+using Discord;
+using Discord.Net;
+using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace csharpi
 {
@@ -21,6 +26,21 @@ namespace csharpi
         {
             get { return fieldc; }
             set { fieldc = value;}
+        }
+    }
+    class RockPaperScissorsObject 
+    {
+        private SocketUser users;
+        private string answers;
+        public SocketUser user
+        {
+            get { return users; }
+            set { users = value;}
+        }
+        public string answer
+        {
+            get { return answers; }
+            set { answers = value;}
         }
     }
 }
