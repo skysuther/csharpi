@@ -160,7 +160,7 @@ namespace csharpi.rockpaperscissors
                 {
                     UserAnswers.Add(useranswer);
                 } 
-                UserAnswers.Add(useranswer);
+                //UserAnswers.Add(useranswer);
             }
         }
     }
