@@ -58,17 +58,22 @@ namespace csharpi.rockpaperscissors
                 // Set up object to add to list
                 Tuple<SocketUser, string> useranswer = Tuple.Create(component.User,answer);
                 // Only one answer per user, add object useranser to list
-                if(UserAnswers.Count() == 0)
+                if(!UserAnswers.Any())
                 {
                     UserAnswers.Add(useranswer);
                 } else
                 {
-                    if(UserAnswers[0].Item1.Username.Equals(component.User.Username))
-                    {
-                    } else
+                    bool uniquePlayer = true;
+                    foreach (var user in UserAnswers){
+                        if(user.Item1.Username.Equals(component.User.Username)){
+                            uniquePlayer = false;
+                        }
+                    }
+                    
+                    if(uniquePlayer == true)
                     {
                         UserAnswers.Add(useranswer);
-                    }
+                    } 
                 }
                 // UserAnswers.Add(useranswer);
                 var message = "";
