@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using csharpi.Connection;
+using csharpi.rockpaperscissors;
 
 namespace csharpi.Services
 {
@@ -21,7 +22,7 @@ namespace csharpi.Services
         private BotSettings bset = new BotSettings();
         private RockPaperScissorsObject rps = new RockPaperScissorsObject();
         DBConnection connection = new DBConnection();
-        List<Tuple<SocketUser, string>> UserAnswers = new List<Tuple<SocketUser, string>>();
+        rockgame rockclass = new rockgame();
 
         public CommandHandler(DiscordSocketClient client, InteractionService commands, IServiceProvider services)
         {
@@ -39,7 +40,8 @@ namespace csharpi.Services
             _client.InteractionCreated += HandleInteraction;
             _client.Ready += Client_Ready;
             _client.SlashCommandExecuted += SlashCommandHandler;
-            _client.ButtonExecuted += MyButtonHandler;
+            _client.ButtonExecuted += rockclass.ButtonChooseRPS;
+            //_client.ButtonExecuted += rockclass.ButtonInitGame;
 
             // process the command execution results 
             _commands.SlashCommandExecuted += SlashCommandExecuted;
@@ -268,89 +270,10 @@ namespace csharpi.Services
                 .WithButton("Rock", "rock-id")
                 .WithButton("Paper", "paper-id")
                 .WithButton("Scissors", "scissors-id");
-
-            await command.RespondAsync("Click to play!\n", components: rockbuilder.Build());
-        }
-        public async Task MyButtonHandler(SocketMessageComponent component)
-        {
-            // We can now check for our custom id
-            var answer = "";
-            switch(component.Data.CustomId)
-            {
-                // Since we set our buttons custom id as 'custom-id', we can check for it like this:
-                case "rock-id":
-                    answer = "rock";
-                    break;
-                case "paper-id":
-                    answer = "paper";
-                    break;
-                case "scissors-id":
-                    answer = "scissors";
-                    break;
-            }
-            Tuple<SocketUser, string> useranswer = Tuple.Create(component.User,answer);
-            if(UserAnswers.Count() == 0)
-            {
-                UserAnswers.Add(useranswer);
-            } else
-            {
-                if(UserAnswers[0].Item1.Username.Equals(component.User.Username))
-                {
-                } else
-                {
-                    UserAnswers.Add(useranswer);
-                }
-            }
-            var message = "";
-            var WinStatus = "win";
-
-            if (UserAnswers.Count() >= 2)
-            {
-                switch(UserAnswers[0].Item2)
-                {
-                    case "rock":
-                    if (UserAnswers[1].Item2 == "paper") {WinStatus = "lost";}
-                    if (UserAnswers[1].Item2 == "rock") {WinStatus = "tie";}
-                    break;
-                    case "paper":
-                    if (UserAnswers[1].Item2 == "scissors") {WinStatus = "lost";}
-                    if (UserAnswers[1].Item2 == "paper") {WinStatus = "tie";}
-                    break;
-                    case "scissors":
-                    if (UserAnswers[1].Item2 == "rock") {WinStatus = "lost";}
-                    if (UserAnswers[1].Item2 == "scissors") {WinStatus = "tie";}
-                    break;
-                }
-                if (WinStatus == "win")
-                {
-                    message = $"[**{UserAnswers[0].Item1.Username}**] has won >> [**{UserAnswers[0].Item2}**]\n";
-                    message += $"[**{UserAnswers[1].Item1.Username}**] has lost >> [**{UserAnswers[1].Item2}**]\n";
-                } else if (WinStatus == "tie")
-                {
-                    message = $"[**{UserAnswers[0].Item1.Username}**] >> [**{UserAnswers[0].Item2}**]\n";
-                    message += $"[**{UserAnswers[1].Item1.Username}**] >> [**{UserAnswers[1].Item2}**]\n";
-                    message += $"Its a tie!";
-                } else
-                {
-                    message = $"[**{UserAnswers[1].Item1.Username}**] has won >> [**{UserAnswers[1].Item2}**]\n";
-                    message += $"[**{UserAnswers[0].Item1.Username}**] has lost >> [**{UserAnswers[0].Item2}**]\n";
-                }
-                await component.UpdateAsync(x =>
-                { 
-                    x.Content = $"{message}";
-                    x.Components = null;
-                });
-
-                UserAnswers.Clear();
-            } else 
-            {
-                await component.UpdateAsync(x =>
-                { 
-                    x.Content = $"{component.User.Username} has chosen!\n";
-                });
-            }
-
             
+            var message = "Choose to play!";
+
+            await command.RespondAsync(message, components: rockbuilder.Build());
         }
     }
 }
