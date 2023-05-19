@@ -58,7 +58,7 @@ namespace csharpi.Connection
                     SELECT username, COUNT(*) AS wins
                     FROM [Apple_Bot].[dbo].[RPS_winStats]
                     GROUP BY username
-                    ORDER BY wins";
+                    ORDER BY wins desc";
 
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {

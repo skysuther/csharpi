@@ -26,6 +26,18 @@ namespace csharpi.rockpaperscissors
             get { return answerCount; }
             set { answerCount = value; }
         }
+        private int statCount = 0;
+        public int StatCount
+        {
+            get { return statCount; }
+            set { statCount = value; }
+        }
+        private int rematchCount = 0;
+        public int RematchCount
+        {
+            get { return rematchCount; }
+            set { rematchCount = value; }
+        }
         HashSet<string> validAnswerIds = new HashSet<string> { "rock-id", "paper-id", "scissors-id" };
         private bool gameActive = false;
         public bool GameActive
@@ -66,15 +78,18 @@ namespace csharpi.rockpaperscissors
                     answerRPS = "scissors";
                     break;
                 case "stats-id":
+                    if (StatCount <= 1){break;}
+                    StatCount++;
                     DataTable results = DBConnection.GetRPSWinStats();
-                    message = "";
+                    message = "WIN STATS: \n";
                     foreach (DataRow row in results.Rows)
                     {
                         string username = row["username"].ToString();
                         int wins = Convert.ToInt32(row["wins"]);
 
-                        message += ($"Username: [**{username}**], Wins: [**{wins}**] \n");
+                        message += ($"[**{username}**] has [**{wins}**] wins \n");
                     }
+                    if (message == "WIN STATS: \n"){message += "No one has won yet... this is awkward.\n";}
                     await cp.UpdateAsync(x =>
                     { 
                         x.Components = null;
@@ -84,7 +99,8 @@ namespace csharpi.rockpaperscissors
                     var statsMessage = await cp.Channel.SendMessageAsync(message, components: statbuilder.Build());
                     break;
                 case "rematch-id":
-
+                    if (RematchCount <= 1){break;}
+                    RematchCount++;
                     await cp.UpdateAsync(x =>
                         { 
                             x.Components = null;
@@ -196,7 +212,9 @@ namespace csharpi.rockpaperscissors
             answerRPS = null;
             UserAnswers.Clear();
             TooSlow.Clear();
+            RematchCount = 0;
             AnswerCount = 0;
+            StatCount = 0;
         }
         public async Task addEntryRPS()
         {
