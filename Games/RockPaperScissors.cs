@@ -78,28 +78,21 @@ namespace csharpi.rockpaperscissors
                     answerRPS = "scissors";
                     break;
                 case "stats-id":
-                    if (StatCount <= 1){break;}
+                    if (StatCount >= 1){break;}
                     StatCount++;
-                    DataTable results = DBConnection.GetRPSWinStats();
-                    message = "WIN STATS: \n";
-                    foreach (DataRow row in results.Rows)
-                    {
-                        string username = row["username"].ToString();
-                        int wins = Convert.ToInt32(row["wins"]);
-
-                        message += ($"[**{username}**] has [**{wins}**] wins \n");
-                    }
-                    if (message == "WIN STATS: \n"){message += "No one has won yet... this is awkward.\n";}
                     await cp.UpdateAsync(x =>
                     { 
                         x.Components = null;
                     });
+                    Task<string> statsTask = showStats();
+                    string statsMessage = await statsTask;
+                    
                     var statbuilder = new ComponentBuilder()
                         .WithButton("Rematch!", "rematch-id");
-                    var statsMessage = await cp.Channel.SendMessageAsync(message, components: statbuilder.Build());
+                    var statsSentMessage = await cp.Channel.SendMessageAsync(statsMessage, components: statbuilder.Build());
                     break;
                 case "rematch-id":
-                    if (RematchCount <= 1){break;}
+                    if (RematchCount >= 1){break;}
                     RematchCount++;
                     await cp.UpdateAsync(x =>
                         { 
@@ -138,6 +131,22 @@ namespace csharpi.rockpaperscissors
                     });
                 }
             }
+        }
+         public async Task<string> showStats()
+        {
+            DataTable results = DBConnection.GetRPSWinStats();
+            var message = "WIN STATS: \n";
+            var plural = "";
+            foreach (DataRow row in results.Rows)
+            {
+                string username = row["username"].ToString();
+                int wins = Convert.ToInt32(row["wins"]);
+                if (wins > 1){plural = "s";} else {plural = "";}
+                message += ($"[**{username}**] has [**{wins}**] win{plural} \n");
+            }
+            if (message == "WIN STATS: \n"){message += "No one has won yet... this is awkward.\n";}
+            
+            return message;
         }
         public async Task checkWinState()
         {
@@ -222,29 +231,29 @@ namespace csharpi.rockpaperscissors
             Tuple<SocketUser, string> useranswer = Tuple.Create(cp.User,answerRPS);
             string slowuser = cp.User.Username;
             // Only one answer per user, add object useranser to list
-            // UserAnswers.Add(useranswer);
-            if(!UserAnswers.Any())
-            {
-                AnswerCount += 1;
-                UserAnswers.Add(useranswer);
-            } else if (UserAnswers.Count() < 2)
-            {
-                bool uniquePlayer = true;
-                foreach (var user in UserAnswers){
-                    if(user.Item1.Username.Equals(cp.User.Username)){
-                        uniquePlayer = false;
-                    }
-                }
+            UserAnswers.Add(useranswer);
+            // if(!UserAnswers.Any())
+            // {
+            //     AnswerCount += 1;
+            //     UserAnswers.Add(useranswer);
+            // } else if (UserAnswers.Count() < 2)
+            // {
+            //     bool uniquePlayer = true;
+            //     foreach (var user in UserAnswers){
+            //         if(user.Item1.Username.Equals(cp.User.Username)){
+            //             uniquePlayer = false;
+            //         }
+            //     }
                 
-                if(uniquePlayer == true)
-                {
-                    AnswerCount += 1;
-                    UserAnswers.Add(useranswer);
-                }
-            } else 
-            {
-                TooSlow.Add(slowuser);
-            }
+            //     if(uniquePlayer == true)
+            //     {
+            //         AnswerCount += 1;
+            //         UserAnswers.Add(useranswer);
+            //     }
+            // } else 
+            // {
+            //     TooSlow.Add(slowuser);
+            // }
         }
     }
 }

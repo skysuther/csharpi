@@ -315,19 +315,14 @@ namespace csharpi.Services
         }
         private async Task ShowStatsCommand(SocketSlashCommand command)
         {
-            
-            DataTable results = DBConnection.GetRPSWinStats();
-            var message = "WIN STATS: \n";
-            foreach (DataRow row in results.Rows)
-            {
-                string username = row["username"].ToString();
-                int wins = Convert.ToInt32(row["wins"]);
+            // Reset counters
+            await rockclass.InitializeGame();
 
-                message += ($"[**{username}**] has [**{wins}**] wins \n");
-            }
-            if (message == "WIN STATS: \n"){message += "No one has won yet... this is awkward.\n";}
 
-            await command.RespondAsync(message, components: null, ephemeral: false);
+            //Show stats
+            Task<string> statsTask = rockclass.showStats();
+            string statsMessage = await statsTask;
+            await command.RespondAsync(statsMessage, components: null, ephemeral: false);
         }
     }
 }
