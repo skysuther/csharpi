@@ -3,6 +3,7 @@ using Discord.Net;
 using Discord.Interactions;
 using Discord.WebSocket;
 using System;
+using System.Data;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -182,6 +183,10 @@ namespace csharpi.Services
                 .WithName("reset-rps")
                 .WithDescription("Reset your game!");
 
+            var stats_RPS = new SlashCommandBuilder()
+                .WithName("stats-rps")
+                .WithDescription("Show game stats!");
+
             // Note: Names have to be all lowercase and match the regular expression ^[\w-]{3,32}$
             //guildCommand.WithName("first-command");
 
@@ -205,6 +210,7 @@ namespace csharpi.Services
                 await _client.CreateGlobalApplicationCommandAsync(globalCommand.Build());
                 await _client.CreateGlobalApplicationCommandAsync(play_rockpaperscissors.Build());
                 await _client.CreateGlobalApplicationCommandAsync(reset_RPS.Build());
+                await _client.CreateGlobalApplicationCommandAsync(stats_RPS.Build());
                 // Using the ready event is a simple implementation for the sake of the example. Suitable for testing and development.
                 // For a production bot, it is recommended to only run the CreateGlobalApplicationCommandAsync() once for each command.
             }
@@ -234,6 +240,9 @@ namespace csharpi.Services
                     break;
                 case "reset-rps":
                     await ResetRPSCommand(command);
+                    break;
+                case "stats-rps":
+                    await ShowStatsCommand(command);
                     break;
             }
         }
@@ -303,6 +312,22 @@ namespace csharpi.Services
 
             await rockclass.InitializeGame();
             await command.RespondAsync(message, components: null, ephemeral: true);
+        }
+        private async Task ShowStatsCommand(SocketSlashCommand command)
+        {
+            
+            DataTable results = DBConnection.GetRPSWinStats();
+            var message = "WIN STATS: \n";
+            foreach (DataRow row in results.Rows)
+            {
+                string username = row["username"].ToString();
+                int wins = Convert.ToInt32(row["wins"]);
+
+                message += ($"[**{username}**] has [**{wins}**] wins \n");
+            }
+            if (message == "WIN STATS: \n"){message += "No one has won yet... this is awkward.\n";}
+
+            await command.RespondAsync(message, components: null, ephemeral: false);
         }
     }
 }
