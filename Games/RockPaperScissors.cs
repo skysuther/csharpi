@@ -195,6 +195,7 @@ namespace csharpi.rockpaperscissors
             cp = null;
             answerRPS = null;
             UserAnswers.Clear();
+            TooSlow.Clear();
             AnswerCount = 0;
         }
         public async Task addEntryRPS()
