@@ -192,24 +192,24 @@ namespace csharpi.rockpaperscissors
             // Set up object to add to list
             Tuple<SocketUser, string> useranswer = Tuple.Create(cp.User,answerRPS);
             // Only one answer per user, add object useranser to list
-            UserAnswers.Add(useranswer);
-            // if(!UserAnswers.Any())
-            // {
-            //     UserAnswers.Add(useranswer);
-            // } else
-            // {
-            //     bool uniquePlayer = true;
-            //     foreach (var user in UserAnswers){
-            //         if(user.Item1.Username.Equals(cp.User.Username)){
-            //             uniquePlayer = false;
-            //         }
-            //     }
+            // UserAnswers.Add(useranswer);
+            if(!UserAnswers.Any())
+            {
+                UserAnswers.Add(useranswer);
+            } else
+            {
+                bool uniquePlayer = true;
+                foreach (var user in UserAnswers){
+                    if(user.Item1.Username.Equals(cp.User.Username)){
+                        uniquePlayer = false;
+                    }
+                }
                 
-            //     if(uniquePlayer == true)
-            //     {
-            //         UserAnswers.Add(useranswer);
-            //     }
-            // }
+                if(uniquePlayer == true)
+                {
+                    UserAnswers.Add(useranswer);
+                }
+            }
         }
     }
 }
