@@ -18,8 +18,14 @@ namespace csharpi.rockpaperscissors
     {
         
         List<Tuple<SocketUser, string>> UserAnswers = new List<Tuple<SocketUser, string>>();
+        List<string> TooSlow = new List<string>();
         DBConnection connection = new DBConnection();
-
+        private int answerCount = 0;
+        public int AnswerCount
+        {
+            get { return answerCount; }
+            set { answerCount = value; }
+        }
         HashSet<string> validAnswerIds = new HashSet<string> { "rock-id", "paper-id", "scissors-id" };
         private bool gameActive = false;
         public bool GameActive
@@ -140,6 +146,7 @@ namespace csharpi.rockpaperscissors
             {
                 message =  $"Winner: [**{UserAnswers[0].Item1.Username}**] >> [**{UserAnswers[0].Item2}**]\n";
                 message += $"Loser:   [**{UserAnswers[1].Item1.Username}**] >> [**{UserAnswers[1].Item2}**]\n";
+                if (TooSlow.Any()) {foreach(var user in TooSlow){message += $"{user} was too slow!\n";}}
                 GameActive = false;
                 connection.AddWinnerRPS(UserAnswers[0].Item1.Username);
                 var rockbuilder = new ComponentBuilder()
@@ -155,6 +162,7 @@ namespace csharpi.rockpaperscissors
                 message = $"[**{UserAnswers[0].Item1.Username}**] >> [**{UserAnswers[0].Item2}**]\n";
                 message += $"[**{UserAnswers[1].Item1.Username}**] >> [**{UserAnswers[1].Item2}**]\n";
                 message += $"Its a tie!";
+                if (TooSlow.Any()) {foreach(var user in TooSlow){message += $"{user} was too slow!\n";}}
                 GameActive = false;
                 var rockbuilder = new ComponentBuilder()
                     .WithButton("Rematch!", "rematch-id")
@@ -169,6 +177,7 @@ namespace csharpi.rockpaperscissors
             {
                 message =  $"Winner: [**{UserAnswers[1].Item1.Username}**] >> [**{UserAnswers[1].Item2}**]\n";
                 message += $"Loser:   [**{UserAnswers[0].Item1.Username}**] >> [**{UserAnswers[0].Item2}**]\n";
+                if (TooSlow.Any()) {foreach(var user in TooSlow){message += $"{user} was too slow!\n";}}
                 GameActive = false;
                 connection.AddWinnerRPS(UserAnswers[1].Item1.Username);
                 var rockbuilder = new ComponentBuilder()
@@ -186,17 +195,20 @@ namespace csharpi.rockpaperscissors
             cp = null;
             answerRPS = null;
             UserAnswers.Clear();
+            AnswerCount = 0;
         }
         public async Task addEntryRPS()
         {
             // Set up object to add to list
             Tuple<SocketUser, string> useranswer = Tuple.Create(cp.User,answerRPS);
+            string slowuser = cp.User.Username;
             // Only one answer per user, add object useranser to list
             // UserAnswers.Add(useranswer);
             if(!UserAnswers.Any())
             {
+                AnswerCount += 1;
                 UserAnswers.Add(useranswer);
-            } else
+            } else if (UserAnswers.Count() < 2)
             {
                 bool uniquePlayer = true;
                 foreach (var user in UserAnswers){
@@ -207,8 +219,12 @@ namespace csharpi.rockpaperscissors
                 
                 if(uniquePlayer == true)
                 {
+                    AnswerCount += 1;
                     UserAnswers.Add(useranswer);
                 }
+            } else 
+            {
+                TooSlow.Add(slowuser);
             }
         }
     }
