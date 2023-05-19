@@ -177,6 +177,11 @@ namespace csharpi.Services
                 .WithName("play-rockpaperscissors")
                 .WithDescription("Initiate a rock, paper, scissors game!");
 
+                
+            var reset_RPS = new SlashCommandBuilder()
+                .WithName("reset-rps")
+                .WithDescription("Reset your game!");
+
             // Note: Names have to be all lowercase and match the regular expression ^[\w-]{3,32}$
             //guildCommand.WithName("first-command");
 
@@ -199,6 +204,7 @@ namespace csharpi.Services
                 // With global commands we don't need the guild.
                 await _client.CreateGlobalApplicationCommandAsync(globalCommand.Build());
                 await _client.CreateGlobalApplicationCommandAsync(play_rockpaperscissors.Build());
+                await _client.CreateGlobalApplicationCommandAsync(reset_RPS.Build());
                 // Using the ready event is a simple implementation for the sake of the example. Suitable for testing and development.
                 // For a production bot, it is recommended to only run the CreateGlobalApplicationCommandAsync() once for each command.
             }
@@ -226,6 +232,9 @@ namespace csharpi.Services
                 case "play-rockpaperscissors":
                     await HandleRockPaperScissorsCommand(command);
                     break;
+                case "reset-rps":
+                    await ResetRPSCommand(command);
+                    break;
             }
         }
         private async Task HandleListRoleCommand(SocketSlashCommand command)
@@ -250,10 +259,8 @@ namespace csharpi.Services
         
         private async Task HandleAppleFactCommand(SocketSlashCommand command)
         {
-            // We need to extract the user parameter from the command. since we only have one option and it's required, we can just use the first option.
+            // We need to extract a fact from the database.
             var applefact = DBConnection.RandomAppleFacts();
-
-            // We remove the everyone role and select the mention of each role.
 
             var embedBuiler = new EmbedBuilder()
                 .WithDescription(applefact.Item1)
@@ -266,6 +273,15 @@ namespace csharpi.Services
         }
         private async Task HandleRockPaperScissorsCommand(SocketSlashCommand command)
         {
+            bool isGameActive = rockclass.GameActive;
+            if (isGameActive)
+            {
+                // Game is active, show message indicating the game is already in progress
+                await command.RespondAsync("A game is already in progress. Finish it before starting a new one.");
+                return;
+            }
+
+            // Build the component for the game
             var rockbuilder = new ComponentBuilder()
                 .WithButton("Rock", "rock-id")
                 .WithButton("Paper", "paper-id")
@@ -273,7 +289,20 @@ namespace csharpi.Services
             
             var message = "Choose to play!";
 
+            await rockclass.InitializeGame();
+            rockclass.GameActive = true;
             await command.RespondAsync(message, components: rockbuilder.Build());
+
+        }
+        private async Task ResetRPSCommand(SocketSlashCommand command)
+        {
+            rockclass.GameActive = false;
+            connection.clearStats();
+
+            var message = "game reset!";
+
+            await rockclass.InitializeGame();
+            await command.RespondAsync(message, components: null, ephemeral: true);
         }
     }
 }
