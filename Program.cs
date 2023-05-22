@@ -4,12 +4,12 @@ using Discord.Net;
 using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.DependencyInjection;
 using csharpi.Services;
-using System.Threading;
 
 namespace csharpi
 {
@@ -63,6 +63,7 @@ namespace csharpi
 
                 // we get the CommandHandler class here and call the InitializeAsync method to start things up for the CommandHandler service
                 await services.GetRequiredService<CommandHandler>().InitializeAsync();
+                
 
                 await Task.Delay(Timeout.Infinite);
             }

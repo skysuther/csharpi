@@ -65,57 +65,39 @@ namespace csharpi.rockpaperscissors
         {
             cp = component;
             var message = "";
-            switch(cp.Data.CustomId)
-            {
-                // Since we set our buttons custom id as 'custom-id', we can check for it like this:
-                case "rock-id":
-                    answerRPS = "rock";
-                    break;
-                case "paper-id":
-                    answerRPS = "paper";
-                    break;
-                case "scissors-id":
-                    answerRPS = "scissors";
-                    break;
-                case "stats-id":
-                    if (StatCount >= 1){break;}
-                    StatCount++;
-                    await cp.UpdateAsync(x =>
-                    { 
-                        x.Components = null;
-                    });
-                    Task<string> statsTask = showStats();
-                    string statsMessage = await statsTask;
-                    
-                    var statbuilder = new ComponentBuilder()
-                        .WithButton("Rematch!", "rematch-id");
-                    var statsSentMessage = await cp.Channel.SendMessageAsync(statsMessage, components: statbuilder.Build());
-                    break;
-                case "rematch-id":
-                    if (RematchCount >= 1){break;}
-                    RematchCount++;
-                    await cp.UpdateAsync(x =>
-                        { 
-                            x.Components = null;
-                        });
-                    // Build the component for the game
-                    var rockbuilder = new ComponentBuilder()
-                        .WithButton("Rock", "rock-id")
-                        .WithButton("Paper", "paper-id")
-                        .WithButton("Scissors", "scissors-id");
-                    
-                    message = "Choose to play!";
-                    GameActive = true;
-                    
-                    // Get the channel where the interaction occurred
-                    var channel = cp.Channel as SocketTextChannel;
-                    
-                    // Send a new message in the channel
-                    var newMessage = await channel.SendMessageAsync(message, components: rockbuilder.Build());
-
-                    await InitializeGame();
-                    break;
+            // Since the custom id of each button corresponds to the answer value, 
+            // we can simply use that value directly instead of using a switch statement.
+            if (cp.Data.CustomId.StartsWith("rock")) {
+                answerRPS = "rock";
+            } else if (cp.Data.CustomId.StartsWith("paper")) {
+                answerRPS = "paper";
+            } else if (cp.Data.CustomId.StartsWith("scissors")) {
+                answerRPS = "scissors";
+            } else if (cp.Data.CustomId == "stats-id" && StatCount < 1 && RematchCount < 1) {
+                StatCount++;
+                Task<string> statsTask = showStats();
+                string statsMessage = await statsTask;
+                
+                var statbuilder = new ComponentBuilder()
+                    .WithButton("Rematch!", "rematch-id");
+                
+                await cp.UpdateAsync(x => { x.Content = statsMessage; x.Components = statbuilder.Build(); });
+            } else if (cp.Data.CustomId == "rematch-id" && StatCount < 1 && RematchCount < 1) {
+                RematchCount++;
+            
+                GameActive = true;
+                
+                var rockbuilder = new ComponentBuilder()
+                    .WithButton("Rock", "rock-id")
+                    .WithButton("Paper", "paper-id")
+                    .WithButton("Scissors", "scissors-id");
+                
+                message = "Choose to play!";
+                await cp.UpdateAsync(x => { x.Content = message; x.Components = rockbuilder.Build(); });
+            
+                await InitializeGame();
             }
+            
 
             if (validAnswerIds.Contains(cp.Data.CustomId)) {
                 await addEntryRPS();
@@ -125,96 +107,71 @@ namespace csharpi.rockpaperscissors
                     await checkWinState();
                 } else 
                 {
-                    await cp.UpdateAsync(x =>
-                    { 
-                        x.Content = $"{component.User.Username} has chosen!\n";
-                    });
+                    await cp.UpdateAsync(x => { x.Content = $"{component.User.Username} has chosen!\n"; });
                 }
             }
         }
-         public async Task<string> showStats()
+        public async Task<string> showStats()
         {
             DataTable results = DBConnection.GetRPSWinStats();
-            var message = "WIN STATS: \n";
-            var plural = "";
+            
+            // Use string interpolation to simplify message construction
+            var message = $"WIN STATS: \n{(results.Rows.Count == 0 ? "No one has won yet... this is awkward.\n" : "")}";
+        
             foreach (DataRow row in results.Rows)
             {
                 string username = row["username"].ToString();
                 int wins = Convert.ToInt32(row["wins"]);
-                if (wins > 1){plural = "s";} else {plural = "";}
+        
+                // Replace if statement with ternary operator
+                var plural = (wins > 1) ? "s" : "";
+        
                 message += ($"[**{username}**] has [**{wins}**] win{plural} \n");
             }
-            if (message == "WIN STATS: \n"){message += "No one has won yet... this is awkward.\n";}
-            
+                    
             return message;
         }
+        
         public async Task checkWinState()
         {
             var message = "";
-            var WinStatus = "win";
-            switch(UserAnswers[0].Item2)
-            {
-                case "rock":
-                if (UserAnswers[1].Item2 == "paper") {WinStatus = "lost";}
-                if (UserAnswers[1].Item2 == "rock") {WinStatus = "tie";}
-                break;
-                case "paper":
-                if (UserAnswers[1].Item2 == "scissors") {WinStatus = "lost";}
-                if (UserAnswers[1].Item2 == "paper") {WinStatus = "tie";}
-                break;
-                case "scissors":
-                if (UserAnswers[1].Item2 == "rock") {WinStatus = "lost";}
-                if (UserAnswers[1].Item2 == "scissors") {WinStatus = "tie";}
-                break;
-            }
-            if (WinStatus == "win")
-            {
-                message =  $"Winner: [**{UserAnswers[0].Item1.Username}**] >> [**{UserAnswers[0].Item2}**]\n";
-                message += $"Loser:   [**{UserAnswers[1].Item1.Username}**] >> [**{UserAnswers[1].Item2}**]\n";
-                if (TooSlow.Any()) {foreach(var user in TooSlow){message += $"{user} was too slow!\n";}}
-                GameActive = false;
-                connection.AddWinnerRPS(UserAnswers[0].Item1.Username);
-                var rockbuilder = new ComponentBuilder()
-                    .WithButton("Rematch!", "rematch-id")
-                    .WithButton("Stats", "stats-id");
-                await cp.UpdateAsync(x =>
-                { 
-                    x.Content = $"{message}";
-                    x.Components = rockbuilder.Build();
-                });
-            } else if (WinStatus == "tie")
-            {
+        
+            // Use a dictionary to avoid multiple if statements
+            var moves = new Dictionary<string, string> {
+                { "rock", "scissors" },
+                { "paper", "rock" },
+                { "scissors", "paper" }
+            };
+        
+            // Check if it's a tie
+            if (UserAnswers[0].Item2 == UserAnswers[1].Item2) {
                 message = $"[**{UserAnswers[0].Item1.Username}**] >> [**{UserAnswers[0].Item2}**]\n";
                 message += $"[**{UserAnswers[1].Item1.Username}**] >> [**{UserAnswers[1].Item2}**]\n";
                 message += $"Its a tie!";
-                if (TooSlow.Any()) {foreach(var user in TooSlow){message += $"{user} was too slow!\n";}}
-                GameActive = false;
-                var rockbuilder = new ComponentBuilder()
-                    .WithButton("Rematch!", "rematch-id")
-                    .WithButton("Stats", "stats-id");
-                GameActive = false;
-                await cp.UpdateAsync(x =>
-                { 
-                    x.Content = $"{message}";
-                    x.Components = rockbuilder.Build();
-                });
-            } else
-            {
-                message =  $"Winner: [**{UserAnswers[1].Item1.Username}**] >> [**{UserAnswers[1].Item2}**]\n";
-                message += $"Loser:   [**{UserAnswers[0].Item1.Username}**] >> [**{UserAnswers[0].Item2}**]\n";
-                if (TooSlow.Any()) {foreach(var user in TooSlow){message += $"{user} was too slow!\n";}}
-                GameActive = false;
-                connection.AddWinnerRPS(UserAnswers[1].Item1.Username);
-                var rockbuilder = new ComponentBuilder()
-                    .WithButton("Rematch!", "rematch-id")
-                    .WithButton("Stats", "stats-id");
-                await cp.UpdateAsync(x =>
-                { 
-                    x.Content = $"{message}";
-                    x.Components = rockbuilder.Build();
-                });
+            } else {
+                // Check if user 1 wins
+                if (moves[UserAnswers[0].Item2] == UserAnswers[1].Item2) {
+                    message = $"Winner: [**{UserAnswers[0].Item1.Username}**] >> [**{UserAnswers[0].Item2}**]\n";
+                    message += $"Loser:   [**{UserAnswers[1].Item1.Username}**] >> [**{UserAnswers[1].Item2}**]\n";
+                    connection.AddWinnerRPS(UserAnswers[0].Item1.Username);
+                } else {
+                    // If not, user 2 wins
+                    message = $"Winner: [**{UserAnswers[1].Item1.Username}**] >> [**{UserAnswers[1].Item2}**]\n";
+                    message += $"Loser:   [**{UserAnswers[0].Item1.Username}**] >> [**{UserAnswers[0].Item2}**]\n";
+                    connection.AddWinnerRPS(UserAnswers[1].Item1.Username);
+                }
             }
+        
+            if (TooSlow.Any()) {
+                foreach(var user in TooSlow) {
+                    message += $"{user} was too slow!\n";
+                }
+            }
+        
+            GameActive = false;
+            await EndGame(message);
         }
+        
         public async Task InitializeGame() 
         {
             cp = null;
@@ -225,35 +182,49 @@ namespace csharpi.rockpaperscissors
             AnswerCount = 0;
             StatCount = 0;
         }
+        public async Task EndGame(string message)
+        {
+            GameActive = false;
+        
+            var rockbuilder = new ComponentBuilder()
+                .WithButton("Rematch!", "rematch-id")
+                .WithButton("Stats", "stats-id");
+        
+            // Update message and components in the existing message
+            await cp.UpdateAsync(x =>
+            { 
+                x.Content = $"{message}";
+                x.Components = rockbuilder.Build();
+            });
+        }
+        
         public async Task addEntryRPS()
         {
             // Set up object to add to list
             Tuple<SocketUser, string> useranswer = Tuple.Create(cp.User,answerRPS);
             string slowuser = cp.User.Username;
-            // Only one answer per user, add object useranser to list
-            UserAnswers.Add(useranswer);
-            // if(!UserAnswers.Any())
-            // {
-            //     AnswerCount += 1;
-            //     UserAnswers.Add(useranswer);
-            // } else if (UserAnswers.Count() < 2)
-            // {
-            //     bool uniquePlayer = true;
-            //     foreach (var user in UserAnswers){
-            //         if(user.Item1.Username.Equals(cp.User.Username)){
-            //             uniquePlayer = false;
-            //         }
-            //     }
-                
-            //     if(uniquePlayer == true)
-            //     {
-            //         AnswerCount += 1;
-            //         UserAnswers.Add(useranswer);
-            //     }
-            // } else 
-            // {
-            //     TooSlow.Add(slowuser);
-            // }
+
+            
+            bool uniquePlayer = true;
+            foreach (var user in UserAnswers){
+                if(user.Item1.Username.Equals(cp.User.Username)){
+                    uniquePlayer = false;
+                }
+            }
+
+            
+            if(!UserAnswers.Any())
+            {
+                AnswerCount += 1;
+                UserAnswers.Add(useranswer);
+            } else if (UserAnswers.Count() < 2 && uniquePlayer == true)
+            {
+                AnswerCount += 1;
+                UserAnswers.Add(useranswer);
+            } else if (uniquePlayer == true)
+            {
+                TooSlow.Add(slowuser);
+            }
         }
     }
 }

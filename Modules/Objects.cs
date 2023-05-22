@@ -43,4 +43,8 @@ namespace csharpi
             set { answers = value;}
         }
     }
+    class RPSUserInput
+    {
+        
+    }
 }
